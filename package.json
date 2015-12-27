@@ -1,0 +1,16 @@
+{
+  "name": "PinLoc_Js",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "electron-prebuilt": "~0.35.1",
+    "socket.io": "~1.3.7"
+  },
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "Long",
+  "license": "BSD-2-Clause"
+}
