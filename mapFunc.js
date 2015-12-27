@@ -1,8 +1,16 @@
+
+//initial socket.io
   var exp = require('express')();
   var http = require('http').Server(exp);
   var io = require('socket.io')(http);
 
+  var x_gps;
+  var y_gps;
 
+  var debug = true;
+  var data_seg = new Array();
+
+// sent client file to the browser
   exp.get('/', function(req, res){
     res.sendFile(__dirname + '/client.html');
   });
@@ -11,10 +19,32 @@
     console.log('a user connected');
     $('#messages').append($('<li>').text('client connected'));
 
-    socket.on('chat message',function(msg){
+    // when receive a cor data
+    socket.on('corData',function(msg){
       $('#messages').append($('<li>').text(msg));
-      io.emit('chat message', msg);
-      console.log('message: ' + msg);
+      io.emit('corData', msg);
+      console.log('data: ' + msg);
+      //extract gps infomation from raw data
+      var data_seg = msg.split(",");
+      console.log(data_seg.length);
+      if(data_seg.length >= 3) {
+        x_gps = data_seg[1]/100;
+        y_gps = data_seg[2]/100;
+
+        if (debug)
+        {
+          console.log('data_seg[0]: ' + data_seg[0]);
+          console.log('data_seg[1]: ' + data_seg[1]);
+          console.log('data_seg[2]: ' + data_seg[2]);
+          console.log('data_seg[3]: ' + data_seg[3]);
+          console.log('x_gps: ' + x_gps);
+          console.log('y_gps: ' + y_gps);
+        }
+        //call cor covert function
+        UpdateLoc(x_gps,y_gps);
+      } else {
+        console.log('data error! ');
+      }
     });
 
     socket.on('disconnect',function(){
@@ -27,8 +57,7 @@
     console.log('listening on *:3000');
   });
 
-
-
+//map data set up
   var x_UST = 118.845527, y_UST =32.027782;
 
 	var TargetArr = [
@@ -50,14 +79,13 @@
 
 
 
+//map functions
     function initMap(x,y){
         createMap(x,y);//
         setMapEvent();//
         addMapControl();//
         addPolyline();//
     }
-
-
 
     function createMap(x,y){
 		var map = new BMap.Map("dituContent");
@@ -103,102 +131,39 @@
 	}
 
 
-	initMap(x_UST,y_UST);//�����ͳ�ʼ����ͼ
-	addMarker();
-	setTimeout(function(){
-		UpdateLoc(x_UST,y_UST);
-	}, 3000);
+  //map init
+    initMap(x_UST,y_UST);
+    addMarker();
 
 
-
-
-	//�������ݵĺ���
 	function UpdateLoc(x,y)
 	{
-		alert('UpdateLoc called');
-		//����ת����֮���Ļص�����
-		translateCallback = function (data)
+
+    translateCallback = function (data)
 		{
 		  if(data.status === 0)
 		  {
-			removeMarker();
-			alert('removeMarker called!');
-			for (var i = 0; i < data.points.length; i++)
-			{
-				marker[i] = new BMap.Marker(data.points[i]);
-				map.addOverlay(marker[i]);
-				var label = new window.BMap.Label(markerArr[i].title, { offset: new window.BMap.Size(10, -10) });
-				marker[i].setLabel(label);
-				marker[i].addEventListener("mouseover", function () { this.openInfoWindow(info[0]);	});
-				info[i] = new window.BMap.InfoWindow("<p style='font-size:12px;lineheight:1.8em;'>" + markerArr[i].title + "</br>��λ��" + markerArr[i].company + "</br> �����ˣ�" + markerArr[i].owner + "</br> �绰��" + markerArr[i].tel + "</br></p>"); // ������Ϣ���ڶ���
-			}
-		  }
-		}
-
-
-		//x,y ��gps����
-		gpspoint = new BMap.Point(x,y);
-
-
+  			removeMarker();
+  			for (var i = 0; i < data.points.length; i++)
+  			{
+  				marker[i] = new BMap.Marker(data.points[i]);
+  				map.addOverlay(marker[i]);
+          map.setCenter(data.points[i]);  // set the center of map to the newest converted point
+  				var label = new window.BMap.Label(markerArr[i].title, { offset: new window.BMap.Size(10, -10) });
+  				marker[i].setLabel(label);
+  				marker[i].addEventListener("mouseover", function () { this.openInfoWindow(info[0]);	});
+  				info[i] = new window.BMap.InfoWindow("<p style='font-size:12px;lineheight:1.8em;'>" + markerArr[i].title + "</br>company: " + markerArr[i].company + "</br> owner: "+ markerArr[i].owner + "</br> TEL: " + markerArr[i].tel + "</br></p>");
+  		  }
+  		}
+    }
+    //gps point to be converted
+		var gpspoint = new BMap.Point(x,y);
 		var convertor = new BMap.Convertor();
 		var pointArr = [];
 		pointArr.push(gpspoint);
 		convertor.translate(pointArr, 1, 5, translateCallback);
-
-		setTimeout(function(){
-			return 122.211 ;//����һ��double�͵�ֵ��MFC
-		}, 3000);
-		return 122.211 ;//����һ��double�͵�ֵ��MFC
 	}
 
-	/* ��Ŀ������ͬʱ����
-	//����ת����֮���Ļص�����
-	 translateCallback = function (data){
-      if(data.status === 0) {
-		removeMarker();
-        for (var i = 0; i < data.TargetArr.length; i++) {
-            marker[i] = new BMap.Marker(data.TargetArr[i]);
-			map.addOverlay(new BMap.Marker(data.TargetArr[i]));
-			var label = new window.BMap.Label(markerArr[i].title, { offset: new window.BMap.Size(10, -10) });
-			marker[i].setLabel(label);
-			info[i] = new window.BMap.InfoWindow("<p style=��font-size:12px;lineheight:1.8em;��>" + markerArr[i].title + "</br>��λ��" + markerArr[i].company + "</br> �����ˣ�" + markerArr[i].owner + "</br> �绰��" + markerArr[i].tel + "</br></p>"); // ������Ϣ���ڶ���
-        }
-		marker[0].addEventListener("mouseover", function () {
-			this.openInfoWindow(info[0]);
-		});
-		marker[1].addEventListener("mouseover", function () {
-			this.openInfoWindow(info[1]);
-		});
-		marker[2].addEventListener("mouseover", function () {
-			this.openInfoWindow(info[2]);
-		});
-		marker[3].addEventListener("mouseover", function () {
-			this.openInfoWindow(info[3]);
-		});
-
-      }
-    }
-
-	//�������ݵĺ���
-	function UpdateLoc(x0,y0,x1,y1,x2,y2,x3,y3)
-	{
-		//x,y ��gps����
-		TargetArr[0] = new BMap.Point(x0,y0);
-		TargetArr[1] = new BMap.Point(x1,y1);
-		TargetArr[2] = new BMap.Point(x2,y2);
-		TargetArr[3] = new BMap.Point(x3,y3);
-
-		setTimeout(function(){
-			var convertor = new BMap.Convertor();
-			convertor.translate(TargetArr, 1, 4, translateCallback)
-		}, 1000);
-
-		return 122.211 ;//����һ��double�͵�ֵ��MFC
-	}
-	*/
-
-
-	//���ɵĹ���ʵ���Ͼ��ǽ����ҵĵ���Ϊ��ͼ�����ĵ�
 	function searchLoc(n)
 	{
 		var point_T;
@@ -228,7 +193,7 @@
 	{
 		for(var i=0;i<markerArr.length;i++)
 		{
-            marker[i] = new BMap.Marker(TargetArr[i]);
+      marker[i] = new BMap.Marker(TargetArr[i]);
 			map.addOverlay(marker[i]);
 			//marker[i].setAnimation(BMAP_ANIMATION_BOUNCE);
 			var label = new window.BMap.Label(markerArr[i].title, { offset: new window.BMap.Size(10, -10) });
