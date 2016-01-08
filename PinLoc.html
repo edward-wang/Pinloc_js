@@ -45,7 +45,11 @@
         overflow: scroll;
       }
       #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
+      #messages li {
+        padding: 5px 10px;
+        word-wrap: break-word;
+        word-break: normal;
+      }
       #messages li:nth-child(odd) { background: #eee; }
 
   </style>

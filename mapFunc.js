@@ -1,61 +1,122 @@
 
-//initial socket.io
-  var exp = require('express')();
-  var http = require('http').Server(exp);
-  var io = require('socket.io')(http);
+var debug = true;
+var data_seg = new Array();
+var x_gps;
+var y_gps;
 
-  var x_gps;
-  var y_gps;
 
-  var debug = true;
-  var data_seg = new Array();
+//------------socket.io---------------
+/*var exp = require('express')();
+var http = require('http').Server(exp);
+var io = require('socket.io')(http);
+
+const httpPort = 3000;
 
 // sent client file to the browser
-  exp.get('/', function(req, res){
-    res.sendFile(__dirname + '/client.html');
-  });
+exp.get('/', function(req, res){
+  res.sendFile(__dirname + '/client.html');
+});
 
-  io.on('connection',function(socket){
-    console.log('a user connected');
-    $('#messages').append($('<li>').text('client connected'));
+io.on('connection',function(socket){
+  console.log('a user connected');
+  $('#messages').append($('<li>').text('client connected'));
 
-    // when receive a cor data
-    socket.on('corData',function(msg){
-      $('#messages').append($('<li>').text(msg));
-      io.emit('corData', msg);
+  // when receive a cor data
+  socket.on('corData',function(msg){
+    $('#messages').append($('<li>').text(msg));
+    io.emit('corData', msg);
+    if (debug) {
       console.log('data: ' + msg);
-      //extract gps infomation from raw data
-      var data_seg = msg.split(",");
-      console.log(data_seg.length);
-      if(data_seg.length >= 3) {
-        x_gps = data_seg[1]/100;
-        y_gps = data_seg[2]/100;
+      console.log(typeof(msg));
+    }
 
-        if (debug)
-        {
-          console.log('data_seg[0]: ' + data_seg[0]);
-          console.log('data_seg[1]: ' + data_seg[1]);
-          console.log('data_seg[2]: ' + data_seg[2]);
-          console.log('data_seg[3]: ' + data_seg[3]);
-          console.log('x_gps: ' + x_gps);
-          console.log('y_gps: ' + y_gps);
-        }
-        //call cor covert function
-        UpdateLoc(x_gps,y_gps);
-      } else {
-        console.log('data error! ');
+    //extract gps infomation from raw data
+    data_seg = msg.split(",");
+    console.log(data_seg.length);
+    if(data_seg.length >= 3) {
+      x_gps = data_seg[1]/100;
+      y_gps = data_seg[2]/100;
+
+      if (debug)
+      {
+        console.log('data_seg[0]: ' + data_seg[0]);
+        console.log('data_seg[1]: ' + data_seg[1]);
+        console.log('data_seg[2]: ' + data_seg[2]);
+        console.log('data_seg[3]: ' + data_seg[3]);
+        console.log('x_gps: ' + x_gps);
+        console.log('y_gps: ' + y_gps);
       }
-    });
-
-    socket.on('disconnect',function(){
-      $('#messages').append($('<li>').text('client disconnected'));
-      console.log('user disconnected');
-    });
+      //call cor covert function
+      UpdateLoc(x_gps,y_gps);
+    } else {
+      console.log('data error! ');
+    }
   });
 
-  http.listen(3000, function(){
-    console.log('listening on *:3000');
+  socket.on('disconnect',function(){
+    $('#messages').append($('<li>').text('client disconnected'));
+    console.log('user disconnected');
   });
+});
+
+http.listen(httpPort, function(){
+  console.log('listening on *:' + httpPort);
+});*/
+
+
+
+
+//-----------net modual--------------
+var net = require('net');
+const netPort = 3001;
+var clients = [];
+// Start a TCP Server
+net.createServer(function (socket) {
+  // Identify this client
+  socket.name = socket.remoteAddress + ":" + socket.remotePort
+  // Put this new client in the list
+  clients.push(socket);
+  // Send a nice welcome message and announce
+  socket.write("Welcome " + socket.name + "\n");
+  // Handle incoming messages from clients.
+  socket.on('data', function (data) {
+    $('#messages').append($('<li>').text(data));
+    var msg = String.fromCharCode.apply(null, new Uint16Array(data));
+    if (debug) {
+      console.log('data: ' + msg);
+      console.log(typeof(msg));
+    }
+
+    //extract gps infomation from raw data
+    data_seg = msg.split(",");
+    console.log(data_seg.length);
+    if(data_seg.length >= 3) {
+      x_gps = data_seg[1]/100;
+      y_gps = data_seg[2]/100;
+
+      if (debug)
+      {
+        console.log('data_seg[0]: ' + data_seg[0]);
+        console.log('data_seg[1]: ' + data_seg[1]);
+        console.log('data_seg[2]: ' + data_seg[2]);
+        console.log('data_seg[3]: ' + data_seg[3]);
+        console.log('x_gps: ' + x_gps);
+        console.log('y_gps: ' + y_gps);
+      }
+      //call cor covert function
+      UpdateLoc(x_gps,y_gps);
+    } else {
+      console.log('data error! ');
+    }
+  });
+  // Remove the client from the list when it leaves
+  socket.on('end', function () {
+    clients.splice(clients.indexOf(socket), 1);
+    console.log('user disconnected');
+    $('#messages').append($('<li>').text('client disconnected'));
+  });
+}).listen(netPort);
+
 
 //map data set up
   var x_UST = 118.845527, y_UST =32.027782;
