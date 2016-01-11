@@ -19,7 +19,7 @@ exp.get('/', function(req, res){
 
 io.on('connection',function(socket){
   console.log('a user connected');
-  $('#messages').append($('<li>').text('client connected'));
+  $('#messages').append($('<li>').tex0,0,0t('client connected'));
 
   // when receive a cor data
   socket.on('corData',function(msg){
@@ -68,10 +68,10 @@ http.listen(httpPort, function(){
 
 //-----------net modual--------------
 var net = require('net');
-const netPort = 3001;
 var clients = [];
-// Start a TCP Server
-net.createServer(function (socket) {
+var netPort = 3000;
+// Start a TCP Server without listening on the port
+var server = net.createServer(function (socket) {
   // Identify this client
   socket.name = socket.remoteAddress + ":" + socket.remotePort
   // Put this new client in the list
@@ -104,7 +104,7 @@ net.createServer(function (socket) {
         console.log('y_gps: ' + y_gps);
       }
       //call cor covert function
-      UpdateLoc(x_gps,y_gps);
+      UpdateLoc(x_gps,y_gps,1);
     } else {
       console.log('data error! ');
     }
@@ -115,7 +115,23 @@ net.createServer(function (socket) {
     console.log('user disconnected');
     $('#messages').append($('<li>').text('client disconnected'));
   });
-}).listen(netPort);
+});
+
+//get port value from input, and start listening
+exports.startListen = function startListen(){
+
+  var netPort = document.getElementById("inputport").value;
+  if (netPort<0 || netPort> 65535) {
+    alert('invailed port value!');
+  }
+  else {
+    server.listen(netPort);
+    console.log('server listening on port: ' + netPort);
+    $('#messages').append($('<li>').text('Listen on port: ' + netPort));
+  }
+}
+
+
 
 
 //map data set up
@@ -135,26 +151,24 @@ net.createServer(function (socket) {
 		{title:"4#",point:TargetArr[3],company:"company 4",owner:"Huiyan Liu",tel:"18645788888"}
 		];
 
-	var marker = new Array(); //
-	var info = new Array(); //
-
+	var marker = new Array();  //global marker Array
+	var info = new Array();    //global info Array
 
 
 //map functions
+    function createMap(x,y){
+      var map = new BMap.Map("dituContent");
+      var center = new BMap.Point(x,y);
+          map.centerAndZoom(center,16);
+          window.map = map;
+    }
+
     function initMap(x,y){
         createMap(x,y);//
         setMapEvent();//
         addMapControl();//
         addPolyline();//
     }
-
-    function createMap(x,y){
-		var map = new BMap.Map("dituContent");
-		var center = new BMap.Point(x,y);
-        map.centerAndZoom(center,16);
-        window.map = map;
-    }
-
 
     function setMapEvent(){
         map.enableDragging();
@@ -197,24 +211,39 @@ net.createServer(function (socket) {
     addMarker();
 
 
-	function UpdateLoc(x,y)
+	function UpdateLoc(x,y,num)    //num represent the device number, from 1 to 4
 	{
-
+    if (num<1 || num>4) {
+      alert('UpdateLoc: device number error!');
+      return;
+    }
     translateCallback = function (data)
 		{
 		  if(data.status === 0)
 		  {
-  			removeMarker();
-  			for (var i = 0; i < data.points.length; i++)
-  			{
-  				marker[i] = new BMap.Marker(data.points[i]);
-  				map.addOverlay(marker[i]);
-          map.setCenter(data.points[i]);  // set the center of map to the newest converted point
-  				var label = new window.BMap.Label(markerArr[i].title, { offset: new window.BMap.Size(10, -10) });
-  				marker[i].setLabel(label);
-  				marker[i].addEventListener("mouseover", function () { this.openInfoWindow(info[0]);	});
-  				info[i] = new window.BMap.InfoWindow("<p style='font-size:12px;lineheight:1.8em;'>" + markerArr[i].title + "</br>company: " + markerArr[i].company + "</br> owner: "+ markerArr[i].owner + "</br> TEL: " + markerArr[i].tel + "</br></p>");
-  		  }
+        switch (num) {
+          case 1:
+            removeMarker0();
+            break;
+          case 2:
+            removeMarker1();
+            break;
+          case 3:
+            removeMarker2();
+            break;
+          case 4:
+            removeMarker3();
+            break;
+        }
+
+        i = num - 1;
+				marker[i] = new BMap.Marker(data.points[0]);
+				map.addOverlay(marker[i]);
+        //map.setCenter(data.points[i]);  // set the center of map to the newest converted point
+				var label = new window.BMap.Label(markerArr[i].title, { offset: new window.BMap.Size(10, -10) });
+				marker[i].setLabel(label);
+				marker[i].addEventListener("mouseover", function () { this.openInfoWindow(info[0]);	});
+				info[i] = new window.BMap.InfoWindow("<p style='font-size:12px;lineheight:1.8em;'>" + markerArr[i].title + "</br>company: " + markerArr[i].company + "</br> owner: "+ markerArr[i].owner + "</br> TEL: " + markerArr[i].tel + "</br></p>");
   		}
     }
     //gps point to be converted
@@ -278,10 +307,7 @@ net.createServer(function (socket) {
 		});
 	}
 
-	function removeMarker()
-	{
-		map.removeOverlay(marker[0]);
-		map.removeOverlay(marker[1]);
-		map.removeOverlay(marker[2]);
-		map.removeOverlay(marker[3]);
-	}
+	function removeMarker0(){map.removeOverlay(marker[0]);}
+  function removeMarker1(){map.removeOverlay(marker[1]);}
+  function removeMarker2(){map.removeOverlay(marker[2]);}
+  function removeMarker3(){map.removeOverlay(marker[3]);}
