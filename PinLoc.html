@@ -76,7 +76,7 @@
           <div id="alarm"></div>
           <form>
             port <input id="inputport" type="text" name="LastName" value=""><br>
-            <button onclick="mapFunc.startListen()" type="button">start listen</button>
+            <button onclick="appServer.startListen()" type="button">start listen</button>
             <!--<button onclick="mapFunc.playSound()" type="button"></button>-->
             <button onclick="mapFunc.stopSound()" type="button">stop alarm</button><br>
             <button onclick="mapFunc.enableAlarm()" type="button">enable alarm</button>
@@ -93,6 +93,7 @@
   </div>
 
   <script>
+    var appServer = require('./server.js');
     var mapFunc = require('./mapFunc.js');
   </script>
 

@@ -11,5 +11,5 @@ app.on('ready',function(){
     height: 550
   });
   mainWindow.loadURL('file://' + __dirname + '/PinLoc.html');
-  //mainWindow.openDevTools();
+  mainWindow.openDevTools();
 });
